@@ -10,54 +10,32 @@ app.use(cors());
 app.use(express.json());
 
 // Test route
-app.get("/", (req, res) => {
-  res.send("Backend is running 🚀");
-});
-
 app.post("/run", (req, res) => {
-  console.log("Request received");
-
   const code = req.body.code;
 
-  // Create temp file path
-  const filePath = path.join(__dirname, "temp.py");
+  fs.writeFileSync("temp.py", code);
 
-  // Write code to file
-  fs.writeFileSync(filePath, code);
-
-  // Convert Windows path → Docker friendly path
-  let dir = __dirname.replace(/\\/g, "/");
-
-  // 🔥 VERY IMPORTANT FIX for Windows (drive letter)
-  // Example: C:/Users/... → /c/Users/...
-  dir = dir.replace(/^([A-Z]):/, (match, p1) => `/${p1.toLowerCase()}`);
-
-  const command = `docker run --rm -v ${dir}:/app -w /app python:3.11-alpine python temp.py`;
-
-  console.log("Running command:", command);
+  const command = `docker run --rm -v ${process.cwd()}:/app -w /app python:3.9 python temp.py`;
 
   exec(command, (error, stdout, stderr) => {
-    console.log("STDOUT:", stdout);
-    console.log("STDERR:", stderr);
-    console.log("ERROR:", error);
 
-    // Clean up file
+    // Cleanup
     try {
-      fs.unlinkSync(filePath);
+      fs.unlinkSync("temp.py");
     } catch {}
 
     if (error) {
       return res.json({
-        error: stderr || "Execution error",
+        output: stderr || error.message,
       });
     }
 
     res.json({
-      output: stdout || stderr || "No output",
+      output: stdout || "No output",
     });
   });
 });
 
-app.listen(3000, () => {
-  console.log("Backend running on http://localhost:3000");
+app.listen(3000, "0.0.0.0", () => {
+  console.log("Backend running on port 3000");
 });
