@@ -10,7 +10,7 @@ function App() {
     setOutput("Running...");
 
     try {
-      const res = await axios.post("http://localhost:5000/run", {
+      const res = await axios.post("http://34.93.86.130:3000/run", {
         code,
       });
 
