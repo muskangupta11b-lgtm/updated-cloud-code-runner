@@ -56,9 +56,8 @@ app.post("/run", (req, res) => {
   const code = req.body.code;
 
   fs.writeFileSync("temp.py", code);
-
-  exec("python3 temp.py", (error, stdout, stderr) => {
-
+  console.log("INPUT RECEIVED:", req.body.input);
+  exec(`echo "${req.body.input || ""}" | python3 temp.py`, (error, stdout, stderr) => {
     // Cleanup
     try {
       fs.unlinkSync("temp.py");
