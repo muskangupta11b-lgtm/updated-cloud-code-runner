@@ -5,16 +5,20 @@ import axios from "axios";
 function App() {
   const [code, setCode] = useState("print('Hello World')");
   const [output, setOutput] = useState("");
+  const [input, setInput] = useState("");
 
   const runCode = async () => {
     setOutput("Running...");
 
     try {
-      const res = await axios.post("http://34.93.86.130:3000/run", {
-        code,
-      });
+      const response = await fetch("https://updated-cloud-code-runner.onrender.com/run", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ code, input })
+});
 
-      setOutput(res.data.output || res.data.error);
+const data = await response.json();
+setOutput(data.output || data.error);
     } catch {
       setOutput("Server error");
     }
@@ -31,6 +35,20 @@ function App() {
         onChange={(value) => setCode(value)}
         theme="vs-dark"
       />
+
+      <textarea
+  placeholder="Enter input (each input in new line)"
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+  style={{
+    width: "100%",
+    height: "80px",
+    marginTop: "10px",
+    padding: "10px",
+  }}
+/>
+
+      
 
       <button
         onClick={runCode}
