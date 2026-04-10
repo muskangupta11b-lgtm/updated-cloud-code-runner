@@ -33,7 +33,13 @@ setOutput(data.output || data.error);
     minHeight: "100vh",
     padding: "20px"
   }}>
-    <h1>🚀 Cloud Code Runner</h1>
+    <h1 style={{
+  color: "#58a6ff",
+  textAlign: "center",
+  marginBottom: "20px"
+}}>
+  🚀 Cloud Code Runner
+</h1>
 
     {/* Code Editor */}
     <Editor
