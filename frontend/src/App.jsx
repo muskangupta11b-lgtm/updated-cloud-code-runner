@@ -86,7 +86,24 @@ setOutput(data.output || data.error);
       >
         ▶ Run Code
       </button>
-
+      
+        <button
+  onClick={() => {
+    localStorage.setItem("savedCode", code);
+    alert("Code saved!");
+  }}
+  style={{
+    padding: "10px",
+    marginRight: "10px",
+    background: "#8957e5",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer"
+  }}
+>
+  💾 Save Code
+</button>
       <button
         onClick={() => navigator.clipboard.writeText(output)}
         style={{
@@ -100,8 +117,27 @@ setOutput(data.output || data.error);
         }}
       >
         📋 Copy Output
-      </button>
-
+      </button><button
+  onClick={() => {
+    const saved = localStorage.getItem("savedCode");
+    if (saved) {
+      setCode(saved);
+    } else {
+      alert("No saved code found");
+    }
+  }}
+  style={{
+    padding: "10px",
+    background: "#30363d",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer"
+  }}
+>
+  📂 Load Code
+</button>
+    
       <button
         onClick={() => setOutput("")}
         style={{
