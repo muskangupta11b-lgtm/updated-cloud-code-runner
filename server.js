@@ -55,12 +55,14 @@ app.use(express.json());
 app.post("/run", (req, res) => {
   const code = req.body.code;
 
-  fs.writeFileSync("temp.py", code);
+  const path = require("path");
+const filePath = path.join(__dirname, "temp.py");
+fs.writeFileSync(filePath, code);
   console.log("INPUT RECEIVED:", req.body.input);
-  exec(`printf "%s" "${req.body.input || ""}" | python3 temp.py`, (error, stdout, stderr) => {
+  exec(`printf "%s" "${req.body.input || ""}" | python3 ${filePath}`, (error, stdout, stderr) => {
     // Cleanup
     try {
-      fs.unlinkSync("temp.py");
+      fs.unlinkSync(filePath);
     } catch {}
 
     if (error) {
