@@ -46,23 +46,72 @@ const express = require("express");
 const cors = require("cors");
 const { exec } = require("child_process");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+/* ------------------ MongoDB ------------------ */
+
+async function startServer() {
+  try {
+    console.log("Connecting to MongoDB...");
+
+    await mongoose.connect("mongodb+srv://muskangupta11b_db_user:jrdey@cluster0.mosa02h.mongodb.net/codeRunner",{
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  });
+
+    console.log("MongoDB Connected ✅");
+
+    app.listen(3000, "0.0.0.0", () => {
+      console.log("Backend running on port 3000");
+    });
+
+  } catch (err) {
+    console.log("Mongo Error ❌");
+    console.log(err);
+  }
+}
+
+/* ------------------ Schema ------------------ */
+
+const CodeSchema = new mongoose.Schema({
+  code: String,
+  input: String,
+  output: String,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const Code = mongoose.model("Code", CodeSchema);
+const ProjectSchema = new mongoose.Schema({
+  title: String,
+  code: String,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const Project = mongoose.model("Project", ProjectSchema);
+
+/* ------------------ Routes ------------------ */
+
 app.post("/run", (req, res) => {
   const code = req.body.code;
+  const input = req.body.input || "";
 
-  const path = require("path");
-const filePath = path.join(__dirname, "temp.py");
-fs.writeFileSync(filePath, code);
-  console.log("INPUT RECEIVED:", req.body.input);
-  exec(`printf "%s" "${req.body.input || ""}" | python3 ${filePath}`, (error, stdout, stderr) => {
-    // Cleanup
+  fs.writeFileSync("temp.py", code);
+
+  exec(`printf "%s" "${input}" | python3 temp.py`, async (error, stdout, stderr) => {
+
     try {
-      fs.unlinkSync(filePath);
+      fs.unlinkSync("temp.py");
     } catch {}
 
     if (error) {
@@ -71,12 +120,76 @@ fs.writeFileSync(filePath, code);
       });
     }
 
+    const result = stdout || "No output";
+
+    // Save to DB
+    await Code.create({
+      code,
+      input,
+      output: result
+    });
+
     res.json({
-      output: stdout || "No output",
+      output: result
     });
   });
 });
+  app.post("/projects", async (req, res) => {
+  try {
+    const { title } = req.body;
 
-app.listen(3000, "0.0.0.0", () => {
-  console.log("Backend running on port 3000");
+    const project = await Project.create({
+      title,
+      code: ""
+    });
+
+    res.json(project);
+  } catch {
+    res.status(500).json({ error: "Create failed" });
+  }
 });
+app.get("/projects", async (req, res) => {
+  try {
+    const projects = await Project.find();
+    res.json(projects);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch projects" });
+  }
+
+});app.put("/projects/:id", async (req, res) => {
+  const updated = await Project.findByIdAndUpdate(
+    req.params.id,
+    { code: req.body.code },
+    { new: true }
+  );
+  app.get("/projects", async (req, res) => {
+  try {
+    const projects = await Project.find();
+    res.json(projects);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch projects" });
+  }
+});
+
+  res.json(updated);
+});
+
+/* ------------------ History API ------------------ */
+
+app.get("/history", async (req, res) => {
+  const data = await Code.find().sort({ createdAt: -1 });
+  res.json(data);
+});
+app.put("/project/:id", async (req, res) => {
+  const updated = await Project.findByIdAndUpdate(
+    req.params.id,
+    { code: req.body.code },
+    { new: true }
+  );
+
+  res.json(updated);
+});
+
+/* ------------------ Start Server ------------------ */
+
+startServer();
