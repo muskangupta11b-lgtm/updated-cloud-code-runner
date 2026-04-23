@@ -40,7 +40,7 @@
 //   console.log("Backend running on port 3000");
 // });
 
-
+console.log("🔥 NEW CODE DEPLOYED");
 
 const express = require("express");
 const cors = require("cors");
@@ -53,16 +53,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
 /* ------------------ MongoDB ------------------ */
 
 async function startServer() {
   try {
     console.log("Connecting to MongoDB...");
 
-    await mongoose.connect("mongodb+srv://muskangupta11b_db_user:jrdey@cluster0.mosa02h.mongodb.net/codeRunner",{
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  });
+    await mongoose.connect("mongodb+srv://muskangupta11b_db_user:jrdey@cluster0.mosa02h.mongodb.net/codeRunner");
 
     console.log("MongoDB Connected ✅");
 
@@ -101,7 +99,9 @@ const ProjectSchema = new mongoose.Schema({
 const Project = mongoose.model("Project", ProjectSchema);
 
 /* ------------------ Routes ------------------ */
-
+app.get("/", (req, res) => {
+  res.send("🚀 Cloud Code Runner Backend is Live");
+});
 app.post("/run", (req, res) => {
   const code = req.body.code;
   const input = req.body.input || "";
@@ -157,11 +157,17 @@ app.get("/projects", async (req, res) => {
   }
 
 });app.put("/projects/:id", async (req, res) => {
-  const updated = await Project.findByIdAndUpdate(
+  try{
+    const updated = await Project.findByIdAndUpdate(
     req.params.id,
     { code: req.body.code },
     { new: true }
   );
+    res.json(project);
+  } catch {
+    res.status(500).json({ error: "Create failed" });
+  }
+  });
   app.get("/projects", async (req, res) => {
   try {
     const projects = await Project.find();
@@ -171,8 +177,6 @@ app.get("/projects", async (req, res) => {
   }
 });
 
-  res.json(updated);
-});
 
 /* ------------------ History API ------------------ */
 
@@ -180,16 +184,6 @@ app.get("/history", async (req, res) => {
   const data = await Code.find().sort({ createdAt: -1 });
   res.json(data);
 });
-app.put("/project/:id", async (req, res) => {
-  const updated = await Project.findByIdAndUpdate(
-    req.params.id,
-    { code: req.body.code },
-    { new: true }
-  );
-
-  res.json(updated);
-});
-
 /* ------------------ Start Server ------------------ */
 
 startServer();
