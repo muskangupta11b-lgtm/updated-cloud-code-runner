@@ -1,161 +1,158 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
-import axios from "axios";
 
 function App() {
-  const [code, setCode] = useState(() => {
-  return localStorage.getItem("code") || "print('Hello World')";
-  });
+  const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
   const [input, setInput] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [projectId, setProjectId] = useState(null);
 
+  const BASE_URL = "https://updated-cloud-code-runner.onrender.com";
+
+  // Fetch projects
+  useEffect(() => {
+    fetch(`${BASE_URL}/projects`)
+      .then(res => res.json())
+      .then(data => setProjects(data))
+      .catch(err => console.log(err));
+  }, []);
+
+  // Create project
+  const createProject = async () => {
+    const name = prompt("Enter project name:");
+    if (!name) return;
+
+    const res = await fetch(`${BASE_URL}/projects`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ title: name })
+    });
+
+    const data = await res.json();
+    setProjects(prev => [...prev, data]);
+  };
+
+  // Open project
+  const openProject = (id) => {
+    const project = projects.find(p => p._id === id);
+
+if (!project) return;
+
+setCode(project.code || "");
+    setProjectId(id);
+  };
+
+  // Save project
+  const saveProject = async () => {
+    if (!projectId) {
+      alert("Select a project first!");
+      return;
+    }
+
+    await fetch(`${BASE_URL}/projects/${projectId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ code })
+    });
+
+    alert("Saved to cloud ✅");
+  };
+
+  // Run code
   const runCode = async () => {
     setOutput("Running...");
 
     try {
-      const response = await fetch("https://updated-cloud-code-runner.onrender.com/run", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ code, input })
-});
+      const res = await fetch(`${BASE_URL}/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ code, input })
+      });
 
-const data = await response.json();
-setOutput(data.output || data.error);
+      const data = await res.json();
+      setOutput(data.output || data.error);
     } catch {
       setOutput("Server error");
     }
   };
 
   return (
-  <div style={{
-    backgroundColor: "#0d1117",
-    color: "white",
-    minHeight: "100vh",
-    padding: "20px"
-  }}>
-    <h1 style={{
-  color: "#58a6ff",
-  textAlign: "center",
-  marginBottom: "20px"
-}}>
-  🚀 Cloud Code Runner
-</h1>
+    <div style={{
+      backgroundColor: "#0d1117",
+      color: "white",
+      minHeight: "100vh",
+      padding: "20px"
+    }}>
+      <h1 style={{
+        color: "#58a6ff",
+        textAlign: "center",
+        marginBottom: "20px"
+      }}>
+        🚀 Cloud Code Runner
+      </h1>
 
-    {/* Code Editor */}
-    <Editor
-      height="300px"
-      defaultLanguage="python"
-      value={code}
-      onChange={(value) => {
-        setCode(value);
-        localStorage.setItem("code", value);
-      }}
-      theme="vs-dark"
-    />
-
-    {/* Input Box */}
-    <textarea
-      placeholder="Enter input (each input in new line)"
-      value={input}
-      onChange={(e) => setInput(e.target.value)}
-      style={{
-        width: "100%",
-        height: "80px",
-        marginTop: "10px",
-        padding: "10px",
-        background: "#161b22",
-        color: "white",
-        border: "1px solid #30363d",
-        borderRadius: "6px"
-      }}
-    />
-
-    {/* Buttons */}
-    <div style={{ marginTop: "10px" }}>
-      <button
-        onClick={runCode}
-        style={{
-          padding: "10px",
-          marginRight: "10px",
-          background: "#238636",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer"
-        }}
-      >
-        ▶ Run Code
+      <button onClick={createProject}>
+        ➕ New Project
       </button>
-      
-        <button
-  onClick={() => {
-    localStorage.setItem("savedCode", code);
-    alert("Code saved!");
-  }}
-  style={{
-    padding: "10px",
-    marginRight: "10px",
-    background: "#8957e5",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer"
-  }}
->
-  💾 Save Code
-</button>
-      <button
-        onClick={() => navigator.clipboard.writeText(output)}
-        style={{
-          padding: "10px",
-          marginRight: "10px",
-          background: "#1f6feb",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer"
-        }}
-      >
-        📋 Copy Output
-      </button><button
-  onClick={() => {
-    const saved = localStorage.getItem("savedCode");
-    if (saved) {
-      setCode(saved);
-    } else {
-      alert("No saved code found");
-    }
-  }}
-  style={{
-    padding: "10px",
-    background: "#30363d",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer"
-  }}
->
-  📂 Load Code
-</button>
-    
-      <button
-        onClick={() => setOutput("")}
-        style={{
-          padding: "10px",
-          background: "#da3633",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer"
-        }}
-      >
-        ❌ Clear Output
-      </button>
-    </div>
 
-    {/* Output Box */}
-    <div
-      style={{
+      <div style={{ marginTop: "10px" }}>
+        {projects.map((p) => (
+          <div
+            key={p._id}
+            style={{
+              padding: "6px",
+              border: "1px solid #444",
+              marginBottom: "5px",
+              cursor: "pointer",
+              borderRadius: "5px",
+              background: projectId === p._id ? "#1f6feb" : "transparent"
+            }}
+            onClick={() => openProject(p._id)}
+          >
+            📁 {p.title}
+          </div>
+        ))}
+      </div>
+
+      <Editor
+        height="300px"
+        defaultLanguage="python"
+        value={code}
+        onChange={(value) => setCode(value)}
+        theme="vs-dark"
+      />
+
+      <textarea
+        placeholder="Enter input"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        style={{
+          width: "100%",
+          height: "80px",
+          marginTop: "10px",
+          padding: "10px",
+          background: "#161b22",
+          color: "white",
+          border: "1px solid #30363d",
+          borderRadius: "6px"
+        }}
+      />
+
+      <div style={{ marginTop: "10px" }}>
+        <button onClick={runCode}>▶ Run Code</button>
+        <button onClick={saveProject}>💾 Save Code</button>
+        <button onClick={() => navigator.clipboard.writeText(output)}>📋 Copy</button>
+        <button onClick={() => setOutput("")}>❌ Clear</button>
+      </div>
+
+      <div style={{
         marginTop: "20px",
         background: "#010409",
         color: "#00ff9c",
@@ -164,12 +161,11 @@ setOutput(data.output || data.error);
         overflowY: "auto",
         borderRadius: "8px",
         fontFamily: "monospace"
-      }}
-    >
-      {output}
+      }}>
+        {output}
+      </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default App;
