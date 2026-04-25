@@ -141,7 +141,7 @@ app.post("/run", (req, res) => {
 app.get("/projects", async (req, res) => {
   try {
     const projects = await Project.find();
-    res.json(updated);
+    res.json(projects);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch projects" });
   }
