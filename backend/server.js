@@ -141,7 +141,7 @@ app.post("/run", (req, res) => {
 app.get("/projects", async (req, res) => {
   try {
     const projects = await Project.find();
-    res.json(updated);
+    res.json(projects);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch projects" });
   }
@@ -159,12 +159,33 @@ app.get("/projects", async (req, res) => {
     res.status(500).json({ error: "Update failed" });
   }
 });
-  app.get("/projects", async (req, res) => {
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.post("/projects", async (req, res) => {
   try {
-    const projects = await Project.find();
-    res.json(projects);
+    const { title } = req.body;
+
+    const project = await Project.create({
+      title,
+      code: ""
+    });
+
+    res.json(project);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch projects" });
+    console.log("Create error:", err);
+    res.status(500).json({ error: "Create failed" });
   }
 });
 

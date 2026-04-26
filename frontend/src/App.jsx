@@ -12,17 +12,22 @@ function App() {
 
   // Fetch projects
   useEffect(() => {
-    fetch(`${BASE_URL}/projects`)
-      .then(res => res.json())
-      .then(data => setProjects(data))
-      .catch(err => console.log(err));
-  }, []);
+  fetch(`${BASE_URL}/projects`)
+    .then(res => res.json())
+    .then(data => {
+      if (Array.isArray(data)) {
+        setProjects(data);
+      } else {
+        console.log("Invalid data:", data);
+      }
+    });
+}, []);
 
-  // Create project
   const createProject = async () => {
-    const name = prompt("Enter project name:");
-    if (!name) return;
+  const name = prompt("Enter project name:");
+  if (!name) return;
 
+  try {
     const res = await fetch(`${BASE_URL}/projects`, {
       method: "POST",
       headers: {
@@ -31,37 +36,50 @@ function App() {
       body: JSON.stringify({ title: name })
     });
 
-    const data = await res.json();
-    setProjects(prev => [...prev, data]);
-  };
+    const newProject = await res.json();
 
+    console.log("CREATED:", newProject);
+
+    // ✅ Add to UI immediately
+    setProjects(prev => [...prev, newProject]);
+
+    // ✅ Select it
+    setProjectId(newProject._id);
+
+    // ✅ Clear editor
+    setCode("");
+
+  } catch (err) {
+    console.log("Create error:", err);
+  }
+};
   // Open project
   const openProject = (id) => {
-    const project = projects.find(p => p._id === id);
+  const project = projects.find(p => p._id === id);
 
-if (!project) return;
+  if (!project) return;
 
-setCode(project.code || "");
-    setProjectId(id);
-  };
+  setCode(project.code || "");
+  setProjectId(id);
+};
 
   // Save project
   const saveProject = async () => {
-    if (!projectId) {
-      alert("Select a project first!");
-      return;
-    }
+  if (!projectId) {
+    alert("Select a project first!");
+    return;
+  }
 
-    await fetch(`${BASE_URL}/projects/${projectId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ code })
-    });
+  await fetch(`${BASE_URL}/projects/${projectId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ code })
+  });
 
-    alert("Saved to cloud ✅");
-  };
+  alert("Saved to cloud ✅");
+};
 
   // Run code
   const runCode = async () => {
@@ -82,7 +100,7 @@ setCode(project.code || "");
       setOutput("Server error");
     }
   };
-
+  <h2>UPDATED VERSION</h2>
   return (
     <div style={{
       backgroundColor: "#0d1117",
@@ -103,24 +121,26 @@ setCode(project.code || "");
       </button>
 
       <div style={{ marginTop: "10px" }}>
-        {projects.map((p) => (
-          <div
-            key={p._id}
-            style={{
-              padding: "6px",
-              border: "1px solid #444",
-              marginBottom: "5px",
-              cursor: "pointer",
-              borderRadius: "5px",
-              background: projectId === p._id ? "#1f6feb" : "transparent"
-            }}
-            onClick={() => openProject(p._id)}
-          >
-            📁 {p.title}
-          </div>
-        ))}
-      </div>
-
+  <div style={{ marginTop: "10px" }}>
+  {Array.isArray(projects) && projects.map((p) => (
+    <div
+      key={p._id}
+      style={{
+        padding: "8px",
+        border: "1px solid #444",
+        marginBottom: "5px",
+        cursor: "pointer",
+        borderRadius: "5px",
+        background: projectId === p._id ? "#1f6feb" : "transparent"
+      }}
+      onClick={() => openProject(p._id)}
+    >
+      📁 {p.title}
+    </div>
+  ))}
+</div>
+console.log("PROJECTS STATE:", projects);
+    </div>
       <Editor
         height="300px"
         defaultLanguage="python"
